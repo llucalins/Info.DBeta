@@ -1,18 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Utilitário para síntese de voz
-const say = (text) => {
-  try {
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = 'pt-BR';
-    msg.rate = 0.9;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(msg);
-  } catch (error) {
-    console.log('Síntese de voz não disponível');
-  }
-};
-
 function TypingTrainer({ onComplete }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [userInput, setUserInput] = useState('');
@@ -26,70 +13,74 @@ function TypingTrainer({ onComplete }) {
   const [startTime, setStartTime] = useState(null);
   const [completedWords, setCompletedWords] = useState(0);
   const [totalWords, setTotalWords] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackType, setFeedbackType] = useState('');
 
   const inputRef = useRef(null);
 
   const exercises = [
     {
       id: 0,
-      title: "Digitação Básica",
-      description: "Digite as palavras exatamente como aparecem na tela",
+      title: "Conceitos Básicos",
+      description: "Digite termos importantes de informática",
       type: 'words',
       content: [
-        "casa", "bola", "mesa", "livro", "porta", "janela", "carro", "árvore", "sol", "lua",
-        "água", "fogo", "terra", "ar", "tempo", "espaço", "amigo", "família", "trabalho", "estudo"
+        "mouse", "teclado", "monitor", "cpu", "internet", "arquivo", "pasta", "software", "hardware", "navegador",
+        "email", "download", "upload", "senha", "usuário", "programa", "aplicativo", "tela", "cursor", "clique"
       ],
       targetWpm: 20,
       timeLimit: 120
     },
     {
       id: 1,
-      title: "Frases Completas",
-      description: "Digite frases completas com pontuação",
+      title: "Frases de Tecnologia",
+      description: "Digite frases sobre computadores e internet",
       type: 'sentences',
       content: [
-        "O sol brilha no céu azul.",
-        "A criança brinca no parque.",
-        "O gato dorme no sofá.",
-        "A música toca suavemente.",
-        "O livro está na estante.",
-        "A comida está na mesa.",
-        "O carro está na garagem.",
-        "A flor cresce no jardim.",
-        "O pássaro canta na árvore.",
-        "A água corre no rio."
+        "O computador é uma ferramenta essencial.",
+        "A internet conecta pessoas do mundo todo.",
+        "O mouse controla o cursor na tela.",
+        "O teclado permite digitar textos rapidamente.",
+        "Os arquivos são organizados em pastas.",
+        "O software executa as tarefas do computador.",
+        "A senha protege suas informações pessoais.",
+        "O navegador acessa sites da internet.",
+        "O email envia mensagens eletrônicas.",
+        "O download baixa arquivos da internet."
       ],
       targetWpm: 25,
       timeLimit: 180
     },
     {
       id: 2,
-      title: "Números e Símbolos",
-      description: "Pratique digitando números e símbolos especiais",
+      title: "Comandos e Atalhos",
+      description: "Pratique comandos úteis do computador",
       type: 'mixed',
       content: [
-        "123 + 456 = 579",
-        "R$ 50,00 - R$ 25,00 = R$ 25,00",
-        "10% de 100 = 10",
-        "2 x 3 = 6",
-        "15 ÷ 3 = 5",
-        "7² = 49",
-        "√16 = 4",
-        "3.14 x 2 = 6.28",
-        "1/2 + 1/2 = 1",
-        "100% - 25% = 75%"
+        "Ctrl + C = Copiar",
+        "Ctrl + V = Colar",
+        "Ctrl + Z = Desfazer",
+        "Ctrl + A = Selecionar tudo",
+        "F5 = Atualizar página",
+        "Alt + Tab = Trocar janelas",
+        "Windows + D = Área de trabalho",
+        "Ctrl + F = Buscar texto",
+        "Ctrl + S = Salvar arquivo",
+        "Ctrl + P = Imprimir documento"
       ],
       targetWpm: 30,
       timeLimit: 150
     },
     {
       id: 3,
-      title: "Texto Longo",
-      description: "Digite um texto completo com parágrafos",
+      title: "Texto Informativo",
+      description: "Digite um texto completo sobre tecnologia",
       type: 'paragraph',
       content: [
-        "A tecnologia tem transformado a forma como vivemos e trabalhamos. Cada dia surgem novas ferramentas que facilitam nossas tarefas diárias. É importante estar sempre atualizado com as novidades para aproveitar ao máximo os benefícios que a informática oferece.",
-        "O computador é uma ferramenta essencial nos dias de hoje. Ele nos permite comunicar com pessoas do mundo todo, acessar informações instantaneamente e realizar tarefas que antes levavam muito mais tempo. Aprender a usar o computador é fundamental para o sucesso pessoal e profissional."
+        "A informática revolucionou a forma como trabalhamos e nos comunicamos. Com o computador, podemos realizar tarefas que antes levavam dias em apenas alguns minutos. A internet nos permite acessar informações de qualquer lugar do mundo e conectar com pessoas de diferentes culturas. É fundamental aprender a usar essas ferramentas para se adaptar ao mundo moderno.",
+        "O mouse e o teclado são os principais dispositivos de entrada do computador. O mouse permite navegar pela interface gráfica de forma intuitiva, enquanto o teclado é essencial para digitar textos e comandos. Dominar esses dispositivos é o primeiro passo para se tornar um usuário eficiente de computador."
       ],
       targetWpm: 35,
       timeLimit: 300
@@ -97,10 +88,6 @@ function TypingTrainer({ onComplete }) {
   ];
 
   const currentExercise = exercises[currentStep];
-
-  useEffect(() => {
-    say("Vamos treinar a digitação! Você vai melhorar sua velocidade e precisão.");
-  }, []);
 
   useEffect(() => {
     let interval;
@@ -130,12 +117,21 @@ function TypingTrainer({ onComplete }) {
     setErrors(0);
     setAccuracy(100);
     setGameTime(0);
+    setStreak(0);
     
     if (inputRef.current) {
       inputRef.current.focus();
     }
+  };
+
+  const showTemporaryFeedback = (message, type) => {
+    setFeedbackMessage(message);
+    setFeedbackType(type);
+    setShowFeedback(true);
     
-    say(`Iniciando exercício: ${currentExercise.title}`);
+    setTimeout(() => {
+      setShowFeedback(false);
+    }, 2000);
   };
 
   const handleInputChange = (e) => {
@@ -165,6 +161,14 @@ function TypingTrainer({ onComplete }) {
         setCompletedWords(prev => prev + 1);
         setCurrentWordIndex(prev => prev + 1);
         setUserInput('');
+        setStreak(prev => prev + 1);
+        
+        // Feedback positivo
+        if (streak >= 3) {
+          showTemporaryFeedback(`🔥 Sequência de ${streak + 1}! Excelente!`, 'success');
+        } else {
+          showTemporaryFeedback('✅ Correto!', 'success');
+        }
         
         if (currentWordIndex + 1 >= words.length) {
           handleExerciseComplete();
@@ -172,6 +176,8 @@ function TypingTrainer({ onComplete }) {
       } else {
         setErrors(prev => prev + 1);
         setAccuracy(prev => Math.max(0, prev - 5));
+        setStreak(0);
+        showTemporaryFeedback('❌ Incorreto. Tente novamente!', 'error');
       }
     }
   };
@@ -184,6 +190,9 @@ function TypingTrainer({ onComplete }) {
       setCompletedWords(prev => prev + 1);
       setCurrentWordIndex(prev => prev + 1);
       setUserInput('');
+      setStreak(prev => prev + 1);
+      
+      showTemporaryFeedback('✅ Frase completa!', 'success');
       
       if (currentWordIndex + 1 >= sentences.length) {
         handleExerciseComplete();
@@ -199,6 +208,9 @@ function TypingTrainer({ onComplete }) {
       setCompletedWords(prev => prev + 1);
       setCurrentWordIndex(prev => prev + 1);
       setUserInput('');
+      setStreak(prev => prev + 1);
+      
+      showTemporaryFeedback('✅ Comando correto!', 'success');
       
       if (currentWordIndex + 1 >= mixedContent.length) {
         handleExerciseComplete();
@@ -214,6 +226,9 @@ function TypingTrainer({ onComplete }) {
       setCompletedWords(prev => prev + 1);
       setCurrentWordIndex(prev => prev + 1);
       setUserInput('');
+      setStreak(prev => prev + 1);
+      
+      showTemporaryFeedback('✅ Parágrafo completo!', 'success');
       
       if (currentWordIndex + 1 >= paragraphs.length) {
         handleExerciseComplete();
@@ -225,16 +240,17 @@ function TypingTrainer({ onComplete }) {
     const finalAccuracy = Math.max(0, 100 - (errors * 2));
     setAccuracy(finalAccuracy);
     
-    say(`Parabéns! Você completou o exercício com ${wpm} palavras por minuto e ${finalAccuracy}% de precisão!`);
+    showTemporaryFeedback(`🎉 Exercício completo! ${wpm} WPM, ${finalAccuracy}% precisão!`, 'success');
     
     setTimeout(() => {
       if (currentStep < exercises.length - 1) {
         setCurrentStep(prev => prev + 1);
         resetExercise();
-        say(`Agora vamos para o próximo exercício: ${exercises[currentStep + 1].title}`);
       } else {
-        say("Parabéns! Você completou todos os exercícios de digitação!");
-        onComplete?.();
+        showTemporaryFeedback("🏆 Todos os exercícios completos!", 'success');
+        setTimeout(() => {
+          onComplete?.();
+        }, 2000);
       }
     }, 2000);
   };
@@ -250,6 +266,7 @@ function TypingTrainer({ onComplete }) {
     setWpm(0);
     setGameTime(0);
     setStartTime(null);
+    setStreak(0);
   };
 
   const formatTime = (seconds) => {
@@ -305,7 +322,7 @@ function TypingTrainer({ onComplete }) {
         <div className="typing-target">
           <div className="text-center mb-4">
             <span className="text-lg text-muted">
-              Expressão {currentWordIndex + 1} de {currentExercise.content.length}
+              Comando {currentWordIndex + 1} de {currentExercise.content.length}
             </span>
           </div>
           <div className="text-center">
@@ -399,6 +416,13 @@ function TypingTrainer({ onComplete }) {
               disabled={!isGameActive}
             />
             
+            {/* Feedback temporário */}
+            {showFeedback && (
+              <div className={`feedback-message ${feedbackType}`}>
+                {feedbackMessage}
+              </div>
+            )}
+            
             {/* Estatísticas em tempo real */}
             <div className="typing-stats">
               <div className="stat-card">
@@ -412,6 +436,10 @@ function TypingTrainer({ onComplete }) {
               <div className="stat-card">
                 <div className="stat-value">{formatTime(gameTime)}</div>
                 <div className="stat-label">Tempo</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{streak}</div>
+                <div className="stat-label">Sequência</div>
               </div>
             </div>
           </>

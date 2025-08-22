@@ -1,305 +1,192 @@
-import React, { useState, useEffect } from 'react';
-
-// Utilitário para síntese de voz
-const say = (text) => {
-  try {
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = 'pt-BR';
-    msg.rate = 0.9;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(msg);
-  } catch (error) {
-    console.log('Síntese de voz não disponível');
-  }
-};
+import React, { useState } from 'react';
 
 function RightClickTrainer({ onComplete }) {
-  const [message, setMessage] = useState('Clique com o botão direito na área abaixo para abrir o menu de contexto.');
-  const [menuPosition, setMenuPosition] = useState(null);
-  const [selectedItem, setSelectedItem] = useState('arquivo');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [message, setMessage] = useState('');
   const [completedActions, setCompletedActions] = useState([]);
 
-  useEffect(() => {
-    say("Vamos aprender sobre o botão direito do mouse! Clique com o botão direito para ver as opções.");
-  }, []);
+  const items = [
+    { name: 'Documento.docx', type: 'file', icon: '📄' },
+    { name: 'Imagem.jpg', type: 'image', icon: '🖼️' },
+    { name: 'Pasta Trabalho', type: 'folder', icon: '📁' },
+    { name: 'Apresentação.pptx', type: 'file', icon: '📊' }
+  ];
 
-  const getContextMenuOptions = () => {
-    return [
-      {
-        key: 'abrir',
-        label: 'Abrir',
-        icon: '📄',
-        description: 'Abre o item selecionado',
-        action: () => {
-          setMessage(`Você escolheu: Abrir ${selectedItem}`);
-          say(`Você escolheu abrir ${selectedItem}`);
-          addCompletedAction('abrir');
-        }
-      },
-      {
-        key: 'copiar',
-        label: 'Copiar',
-        icon: '📋',
-        description: 'Copia o item para a área de transferência',
-        action: () => {
-          setMessage(`Você escolheu: Copiar ${selectedItem}`);
-          say(`Você escolheu copiar ${selectedItem}`);
-          addCompletedAction('copiar');
-        }
-      },
-      {
-        key: 'colar',
-        label: 'Colar',
-        icon: '📋',
-        description: 'Cola o item da área de transferência',
-        action: () => {
-          setMessage(`Você escolheu: Colar ${selectedItem}`);
-          say(`Você escolheu colar ${selectedItem}`);
-          addCompletedAction('colar');
-        }
-      },
-      {
-        key: 'renomear',
-        label: 'Renomear',
-        icon: '✏️',
-        description: 'Permite alterar o nome do item',
-        action: () => {
-          setMessage(`Você escolheu: Renomear ${selectedItem}`);
-          say(`Você escolheu renomear ${selectedItem}`);
-          addCompletedAction('renomear');
-        }
-      },
-      {
-        key: 'excluir',
-        label: 'Excluir',
-        icon: '🗑️',
-        description: 'Remove o item permanentemente',
-        action: () => {
-          setMessage(`Você escolheu: Excluir ${selectedItem}`);
-          say(`Você escolheu excluir ${selectedItem}`);
-          addCompletedAction('excluir');
-        }
-      },
-      {
-        key: 'propriedades',
-        label: 'Propriedades',
-        icon: '⚙️',
-        description: 'Mostra informações detalhadas do item',
-        action: () => {
-          setMessage(`Você escolheu: Propriedades de ${selectedItem}`);
-          say(`Você escolheu ver propriedades de ${selectedItem}`);
-          addCompletedAction('propriedades');
-        }
-      }
-    ];
+  const menuOptions = {
+    file: [
+      { label: 'Abrir', action: 'open', icon: '🔓' },
+      { label: 'Copiar', action: 'copy', icon: '📋' },
+      { label: 'Colar', action: 'paste', icon: '📋' },
+      { label: 'Renomear', action: 'rename', icon: '✏️' },
+      { label: 'Excluir', action: 'delete', icon: '🗑️' },
+      { label: 'Propriedades', action: 'properties', icon: 'ℹ️' }
+    ],
+    image: [
+      { label: 'Abrir', action: 'open', icon: '🔓' },
+      { label: 'Copiar', action: 'copy', icon: '📋' },
+      { label: 'Definir como papel de parede', action: 'wallpaper', icon: '🖼️' },
+      { label: 'Editar', action: 'edit', icon: '✏️' },
+      { label: 'Excluir', action: 'delete', icon: '🗑️' }
+    ],
+    folder: [
+      { label: 'Abrir', action: 'open', icon: '🔓' },
+      { label: 'Copiar', action: 'copy', icon: '📋' },
+      { label: 'Colar', action: 'paste', icon: '📋' },
+      { label: 'Renomear', action: 'rename', icon: '✏️' },
+      { label: 'Excluir', action: 'delete', icon: '🗑️' },
+      { label: 'Propriedades', action: 'properties', icon: 'ℹ️' }
+    ]
   };
 
-  const addCompletedAction = (action) => {
-    setCompletedActions(prev => {
-      const newActions = [...prev, action];
-      if (newActions.length >= 3) {
-        setTimeout(() => {
-          say("Parabéns! Você completou o treinamento do botão direito!");
-          onComplete?.();
-        }, 1000);
-      }
-      return newActions;
-    });
-  };
-
-  const handleContextMenu = (e) => {
+  const handleRightClick = (e, item) => {
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMenuPosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
-    say("Menu de contexto aberto. Escolha uma opção.");
-  };
-
-  const handleMenuClose = () => {
-    setMenuPosition(null);
-  };
-
-  const handleItemSelect = (item) => {
     setSelectedItem(item);
-    setMessage(`Item selecionado: ${item}. Clique com o botão direito para ver as opções.`);
-    say(`Você selecionou ${item}`);
+    setShowMenu(true);
+    setMenuPosition({ x: e.clientX, y: e.clientY });
   };
 
-  const contextMenuOptions = getContextMenuOptions();
+  const handleMenuAction = (action) => {
+    if (!selectedItem) return;
+
+    let actionMessage = '';
+    
+    switch (action) {
+      case 'open':
+        actionMessage = `Abrindo ${selectedItem.name}`;
+        break;
+      case 'copy':
+        actionMessage = `Copiando ${selectedItem.name}`;
+        break;
+      case 'paste':
+        actionMessage = `Colando ${selectedItem.name}`;
+        break;
+      case 'rename':
+        actionMessage = `Renomeando ${selectedItem.name}`;
+        break;
+      case 'delete':
+        actionMessage = `Excluindo ${selectedItem.name}`;
+        break;
+      case 'properties':
+        actionMessage = `Mostrando propriedades de ${selectedItem.name}`;
+        break;
+      case 'wallpaper':
+        actionMessage = `Definindo ${selectedItem.name} como papel de parede`;
+        break;
+      case 'edit':
+        actionMessage = `Editando ${selectedItem.name}`;
+        break;
+      default:
+        actionMessage = `Ação ${action} em ${selectedItem.name}`;
+    }
+
+    setMessage(actionMessage);
+    setShowMenu(false);
+
+    // Marcar ação como completa
+    if (!completedActions.includes(action)) {
+      setCompletedActions([...completedActions, action]);
+    }
+
+    // Verificar se todas as ações foram completadas
+    setTimeout(() => {
+      const allActions = ['open', 'copy', 'paste', 'rename', 'delete', 'properties'];
+      const allCompleted = allActions.every(action => completedActions.includes(action));
+      
+      if (allCompleted && !completedActions.includes('complete')) {
+        setCompletedActions([...completedActions, 'complete']);
+        setTimeout(() => {
+          onComplete?.();
+        }, 2000);
+      }
+    }, 1000);
+  };
+
+  const closeMenu = () => {
+    setShowMenu(false);
+    setSelectedItem(null);
+  };
 
   return (
-    <div>
+    <div className="card">
       {/* Header */}
-      <div className="flex flex-between mb-6">
-        <div className="flex flex-center gap-4">
-          <span className="badge badge-danger">
-            Botão Direito do Mouse
-          </span>
-          <div className="text-sm text-muted">
-            Ações completadas: {completedActions.length}/3
-          </div>
-        </div>
+      <div className="text-center mb-6">
+        <h2 className="text-3xl font-bold mb-2">🖱️ Botão Direito</h2>
+        <p className="text-lg text-muted">Clique com o botão direito para ver as opções</p>
       </div>
 
-      {/* Área de treinamento */}
-      <div className="card">
-        <div className="mb-6 text-center">
-          <div className="text-6xl mb-4">🖱️</div>
-          <h3 className="text-2xl font-bold mb-2">Menu de Contexto</h3>
-          <p className="text-lg text-muted mb-6">
-            Aprenda a usar o botão direito do mouse para acessar opções rápidas
-          </p>
-        </div>
-
-        {/* Seleção de item */}
-        <div className="mb-6">
-          <h4 className="font-semibold mb-3">Selecione um item para testar:</h4>
-          <div className="flex flex-wrap gap-3">
-            {[
-              { key: 'arquivo', label: 'Arquivo', icon: '📄' },
-              { key: 'pasta', label: 'Pasta', icon: '📁' },
-              { key: 'imagem', label: 'Imagem', icon: '🖼️' },
-              { key: 'musica', label: 'Música', icon: '🎵' },
-              { key: 'video', label: 'Vídeo', icon: '🎬' }
-            ].map(item => (
-              <button
-                key={item.key}
-                className={`button ${selectedItem === item.key ? 'button-primary' : 'button-secondary'}`}
-                onClick={() => handleItemSelect(item.key)}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Área de teste */}
-        <div className="mb-6">
+      {/* Área de itens */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {items.map((item, index) => (
           <div
-            onContextMenu={handleContextMenu}
-            className="training-area"
-            style={{ 
-              borderColor: '#d1d5db',
-              backgroundColor: '#f9fafb'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = '#ef4444';
-              e.target.style.backgroundColor = '#fef2f2';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = '#d1d5db';
-              e.target.style.backgroundColor = '#f9fafb';
-              handleMenuClose();
-            }}
+            key={index}
+            className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-400 transition-all"
+            onContextMenu={(e) => handleRightClick(e, item)}
+            onClick={() => setSelectedItem(item)}
           >
-            <div className="text-center">
-              <div className="text-6xl mb-4">
-                {selectedItem === 'arquivo' && '📄'}
-                {selectedItem === 'pasta' && '📁'}
-                {selectedItem === 'imagem' && '🖼️'}
-                {selectedItem === 'musica' && '🎵'}
-                {selectedItem === 'video' && '🎬'}
-              </div>
-              <p className="font-semibold text-gray-700 mb-2">
-                {selectedItem.charAt(0).toUpperCase() + selectedItem.slice(1)} selecionado
-              </p>
-              <p className="text-sm text-gray-500">
-                Clique com o botão direito aqui
-              </p>
-            </div>
-
-            {/* Menu de contexto */}
-            {menuPosition && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: menuPosition.y,
-                  left: menuPosition.x,
-                  zIndex: 50
-                }}
-                className="context-menu"
-                onMouseLeave={handleMenuClose}
-              >
-                {contextMenuOptions.map((option, index) => (
-                  <button
-                    key={option.key}
-                    onClick={() => {
-                      option.action();
-                      handleMenuClose();
-                    }}
-                    className="context-menu-item"
-                    style={{
-                      animationDelay: `${index * 0.05}s`,
-                      animation: 'slideIn 0.3s ease-out'
-                    }}
-                  >
-                    <div className="text-gray-600">
-                      {option.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-800">
-                        {option.label}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {option.description}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="text-4xl mb-2">{item.icon}</div>
+            <div className="font-medium text-sm">{item.name}</div>
+            <div className="text-xs text-gray-500">{item.type}</div>
           </div>
-        </div>
-
-        {/* Mensagem de feedback */}
-        <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <p className="text-blue-800 text-center font-medium">
-            {message}
-          </p>
-        </div>
+        ))}
       </div>
 
-      {/* Ações completadas */}
-      {completedActions.length > 0 && (
-        <div className="card">
-          <h4 className="font-semibold mb-3">Ações realizadas:</h4>
-          <div className="flex flex-wrap gap-2">
-            {completedActions.map((action, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium"
-                style={{
-                  animation: 'fadeIn 0.5s ease-out',
-                  animationDelay: `${index * 0.1}s`
-                }}
-              >
-                ✓ {action}
-              </span>
-            ))}
-          </div>
+      {/* Menu de contexto */}
+      {showMenu && (
+        <div className="context-menu" style={{ left: menuPosition.x, top: menuPosition.y }}>
+          {menuOptions[selectedItem.type].map((option, index) => (
+            <div
+              key={index}
+              className="context-menu-item"
+              onClick={() => handleMenuAction(option.action)}
+            >
+              <span>{option.icon}</span>
+              <span>{option.label}</span>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Dicas */}
-      <div className="card" style={{ backgroundColor: '#fef3c7', borderColor: '#f59e0b' }}>
-        <div className="flex items-start gap-3">
-          <div className="text-yellow-600 mt-1">
-            💡
-          </div>
-          <div>
-            <h4 className="font-semibold text-yellow-800 mb-1">Dicas sobre o botão direito:</h4>
-            <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Botão esquerdo = ação principal (abrir, selecionar)</li>
-              <li>• Botão direito = menu de opções (copiar, colar, excluir)</li>
-              <li>• O menu muda dependendo do que você clica</li>
-              <li>• É uma forma rápida de acessar ações comuns</li>
-            </ul>
-          </div>
+      {/* Mensagem de ação */}
+      {message && (
+        <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+          <p className="text-blue-800 font-medium">{message}</p>
+        </div>
+      )}
+
+      {/* Progresso das ações */}
+      <div className="bg-gray-50 p-4 rounded-lg mb-4">
+        <h4 className="font-bold mb-2">Ações completadas:</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {['open', 'copy', 'paste', 'rename', 'delete', 'properties'].map(action => (
+            <div
+              key={action}
+              className={`p-2 rounded text-sm ${
+                completedActions.includes(action) 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}
+            >
+              {completedActions.includes(action) ? '✅' : '⏳'} {action}
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Instruções */}
+      <div className="text-center text-sm text-gray-600">
+        <p>💡 Dica: Clique com o botão direito do mouse nos itens para ver o menu de contexto</p>
+        <p>🎯 Objetivo: Complete todas as ações para finalizar o treinamento</p>
+      </div>
+
+      {/* Overlay para fechar menu */}
+      {showMenu && (
+        <div 
+          className="fixed inset-0 z-10" 
+          onClick={closeMenu}
+        />
+      )}
     </div>
   );
 }

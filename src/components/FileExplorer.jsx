@@ -1,368 +1,276 @@
 import React, { useState, useEffect } from 'react';
 
-// Utilitário para síntese de voz
-const say = (text) => {
-  try {
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = 'pt-BR';
-    msg.rate = 0.9;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(msg);
-  } catch (error) {
-    console.log('Síntese de voz não disponível');
-  }
-};
-
-// Hook para localStorage
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      return initialValue;
-    }
-  });
-
-  const setValue = (value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.log('Erro ao salvar no localStorage');
-    }
-  };
-
-  return [storedValue, setValue];
-};
-
 function FileExplorer({ onComplete }) {
-  const [fileSystem, setFileSystem] = useLocalStorage('fileSystem', {
-    root: {
-      type: 'folder',
-      children: {
-        'Documentos': {
-          type: 'folder',
-          children: {
-            'Minhas Notas.txt': {
-              type: 'file',
-              content: 'Aqui você pode escrever suas anotações importantes.'
-            }
-          }
-        },
-        'Imagens': {
-          type: 'folder',
-          children: {}
-        },
-        'Downloads': {
-          type: 'folder',
-          children: {}
-        }
-      }
-    }
-  });
-
-  const [currentPath, setCurrentPath] = useLocalStorage('currentPath', ['root']);
+  const [currentPath, setCurrentPath] = useState(['Início']);
+  const [items, setItems] = useState([
+    { name: 'Documentos', type: 'folder', contents: [
+      { name: 'Trabalho', type: 'folder', contents: [
+        { name: 'Relatório.docx', type: 'file' },
+        { name: 'Apresentação.pptx', type: 'file' }
+      ]},
+      { name: 'Pessoal', type: 'folder', contents: [
+        { name: 'Fotos', type: 'folder', contents: [
+          { name: 'foto1.jpg', type: 'file' },
+          { name: 'foto2.jpg', type: 'file' }
+        ]},
+        { name: 'Músicas', type: 'folder', contents: [
+          { name: 'música1.mp3', type: 'file' },
+          { name: 'música2.mp3', type: 'file' }
+        ]}
+      ]}
+    ]},
+    { name: 'Downloads', type: 'folder', contents: [
+      { name: 'arquivo1.pdf', type: 'file' },
+      { name: 'imagem.png', type: 'file' }
+    ]},
+    { name: 'Imagens', type: 'folder', contents: [
+      { name: 'wallpaper.jpg', type: 'file' },
+      { name: 'screenshot.png', type: 'file' }
+    ]}
+  ]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemType, setNewItemType] = useState('folder');
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [completedTasks, setCompletedTasks] = useState([]);
 
-  const currentFolder = (() => {
-    let node = fileSystem.root;
+  const getCurrentItems = () => {
+    let current = items;
     for (let i = 1; i < currentPath.length; i++) {
-      node = node.children[currentPath[i]];
+      const folder = current.find(item => item.name === currentPath[i] && item.type === 'folder');
+      if (folder) {
+        current = folder.contents;
+      }
     }
-    return node;
-  })();
+    return current;
+  };
 
-  const pathString = currentPath.slice(1).join(' / ') || 'Início';
+  const navigateToFolder = (folderName) => {
+    setCurrentPath([...currentPath, folderName]);
+    setSelectedItem(null);
+  };
 
-  useEffect(() => {
-    say("Vamos explorar pastas e arquivos! Clique duas vezes para abrir.");
-  }, []);
+  const goBack = () => {
+    if (currentPath.length > 1) {
+      setCurrentPath(currentPath.slice(0, -1));
+      setSelectedItem(null);
+    }
+  };
+
+  const goToRoot = () => {
+    setCurrentPath(['Início']);
+    setSelectedItem(null);
+  };
 
   const createItem = () => {
-    if (!newItemName.trim()) {
-      alert('Digite um nome para o item!');
-      return;
+    if (!newItemName.trim()) return;
+
+    const newItem = {
+      name: newItemName,
+      type: newItemType,
+      contents: newItemType === 'folder' ? [] : undefined
+    };
+
+    const currentItems = getCurrentItems();
+    currentItems.push(newItem);
+    setItems([...items]);
+
+    // Marcar tarefa como completa
+    const taskKey = `create_${newItemType}`;
+    if (!completedTasks.includes(taskKey)) {
+      setCompletedTasks([...completedTasks, taskKey]);
     }
-
-    if (currentFolder.children[newItemName]) {
-      alert('Já existe um item com este nome!');
-      return;
-    }
-
-    setFileSystem(prev => {
-      const newFs = JSON.parse(JSON.stringify(prev));
-      let node = newFs.root;
-      
-      for (let i = 1; i < currentPath.length; i++) {
-        node = node.children[currentPath[i]];
-      }
-
-      node.children[newItemName] = {
-        type: newItemType,
-        ...(newItemType === 'folder' ? { children: {} } : { content: '' })
-      };
-
-      return newFs;
-    });
 
     setNewItemName('');
-    setShowCreateForm(false);
-    say(`${newItemType === 'folder' ? 'Pasta' : 'Arquivo'} criado com sucesso!`);
+    setShowCreateMenu(false);
   };
 
-  const openItem = (name) => {
-    const item = currentFolder.children[name];
-    
-    if (item.type === 'folder') {
-      setCurrentPath(prev => [...prev, name]);
-      say(`Abrindo pasta ${name}`);
-    } else {
-      setSelectedFile({
-        path: [...currentPath, name],
-        content: item.content || ''
-      });
-      say(`Abrindo arquivo ${name}`);
-    }
-  };
+  const deleteItem = (itemName) => {
+    const currentItems = getCurrentItems();
+    const index = currentItems.findIndex(item => item.name === itemName);
+    if (index !== -1) {
+      currentItems.splice(index, 1);
+      setItems([...items]);
+      setSelectedItem(null);
 
-  const goUp = () => {
-    if (currentPath.length > 1) {
-      setCurrentPath(prev => prev.slice(0, -1));
-      say('Voltando para pasta anterior');
-    }
-  };
-
-  const saveFile = () => {
-    if (!selectedFile) return;
-
-    setFileSystem(prev => {
-      const newFs = JSON.parse(JSON.stringify(prev));
-      let node = newFs.root;
-      
-      for (let i = 1; i < selectedFile.path.length - 1; i++) {
-        node = node.children[selectedFile.path[i]];
+      // Marcar tarefa como completa
+      if (!completedTasks.includes('delete')) {
+        setCompletedTasks([...completedTasks, 'delete']);
       }
-
-      node.children[selectedFile.path[selectedFile.path.length - 1]].content = selectedFile.content;
-      return newFs;
-    });
-
-    alert('Arquivo salvo com sucesso!');
-  };
-
-  const deleteFile = () => {
-    if (!selectedFile) return;
-
-    if (confirm('Tem certeza que deseja excluir este arquivo?')) {
-      setFileSystem(prev => {
-        const newFs = JSON.parse(JSON.stringify(prev));
-        let node = newFs.root;
-        
-        for (let i = 1; i < selectedFile.path.length - 1; i++) {
-          node = node.children[selectedFile.path[i]];
-        }
-
-        delete node.children[selectedFile.path[selectedFile.path.length - 1]];
-        return newFs;
-      });
-
-      setSelectedFile(null);
-      say('Arquivo excluído com sucesso!');
     }
   };
 
-  const goHome = () => {
-    setCurrentPath(['root']);
-    say('Voltando para o início');
+  const openItem = (item) => {
+    if (item.type === 'folder') {
+      navigateToFolder(item.name);
+    } else {
+      setSelectedItem(item);
+    }
   };
 
-  const items = Object.entries(currentFolder.children);
+  const checkCompletion = () => {
+    const requiredTasks = ['create_folder', 'create_file', 'delete'];
+    const allCompleted = requiredTasks.every(task => completedTasks.includes(task));
+    
+    if (allCompleted && !completedTasks.includes('complete')) {
+      setCompletedTasks([...completedTasks, 'complete']);
+      setTimeout(() => {
+        onComplete?.();
+      }, 2000);
+    }
+  };
+
+  // Verificar conclusão sempre que completedTasks mudar
+  useEffect(() => {
+    checkCompletion();
+  }, [completedTasks]);
+
+  const currentItems = getCurrentItems();
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex flex-between mb-6">
+    <div className="card">
+      {/* Header do explorador */}
+      <div className="flex flex-between mb-4">
         <div className="flex flex-center gap-4">
-          <span className="badge badge-warning">
-            Explorador de Arquivos
+          <span className="badge badge-primary">
+            📁 Explorador de Arquivos
           </span>
+          <div className="progress-container" style={{ width: '200px' }}>
+            <div 
+              className="progress-bar" 
+              style={{ width: `${(completedTasks.length / 3) * 100}%` }}
+            ></div>
+          </div>
         </div>
         
         <div className="flex gap-2">
-          <button
-            className="button button-secondary"
-            onClick={goHome}
+          <button 
+            className="button button-secondary" 
+            onClick={goToRoot}
+            disabled={currentPath.length === 1}
           >
             🏠 Início
           </button>
-          <button
-            className="button button-secondary"
-            onClick={() => setShowCreateForm(true)}
+          <button 
+            className="button button-secondary" 
+            onClick={goBack}
+            disabled={currentPath.length === 1}
           >
-            ➕ Novo Item
+            ⬅️ Voltar
+          </button>
+          <button 
+            className="button button-primary" 
+            onClick={() => setShowCreateMenu(true)}
+          >
+            ➕ Criar
           </button>
         </div>
       </div>
 
       {/* Barra de navegação */}
-      <div className="card">
-        <div className="flex items-center gap-3 mb-4">
-          <button
-            className="button button-secondary"
-            onClick={goUp}
-            disabled={currentPath.length === 1}
-          >
-            ⬆️ Voltar
-          </button>
-          
-          <div className="flex-1 px-3 py-2 bg-gray-50 rounded-lg">
-            <span className="text-sm font-medium text-gray-700">
-              📁 {pathString}
-            </span>
-          </div>
-        </div>
-
-        {/* Formulário de criação */}
-        {showCreateForm && (
-          <div className="mb-4 p-4 bg-gray-50 rounded-xl border">
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="Nome do item..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-warning-500"
-              />
-              
-              <select
-                value={newItemType}
-                onChange={(e) => setNewItemType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-warning-500"
-              >
-                <option value="folder">Pasta</option>
-                <option value="file">Arquivo</option>
-              </select>
-              
-              <button
-                className="button button-primary"
-                onClick={createItem}
-                disabled={!newItemName.trim()}
-              >
-                Criar
-              </button>
-              
-              <button
-                className="button button-secondary"
-                onClick={() => setShowCreateForm(false)}
-              >
-                ❌ Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Lista de itens */}
-        <div className="grid grid-4">
-          {items.length === 0 ? (
-            <div className="col-span-full text-center py-8 text-gray-500">
-              <div className="text-6xl mb-2">📁</div>
-              <p>Esta pasta está vazia</p>
-              <p className="text-sm">Clique em "Novo Item" para criar algo</p>
-            </div>
-          ) : (
-            items.map(([name, item]) => (
-              <div
-                key={name}
-                className="p-4 bg-white rounded-xl border border-gray-200 hover:border-warning-300 cursor-pointer transition-all duration-200 hover:shadow-md"
-                onClick={() => openItem(name)}
-                style={{ 
-                  transform: 'scale(1)',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
-                onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-              >
-                <div className="text-center">
-                  <div className="text-4xl mb-2">
-                    {item.type === 'folder' ? '📁' : '📄'}
-                  </div>
-                  <div className="font-semibold text-sm truncate" title={name}>
-                    {name}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {item.type === 'folder' ? 'Pasta' : 'Arquivo'}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+      <div className="flex flex-center gap-2 mb-4 p-2 bg-gray-50 rounded-lg">
+        {currentPath.map((path, index) => (
+          <React.Fragment key={index}>
+            <button
+              className="text-sm text-blue-600 hover:underline"
+              onClick={() => setCurrentPath(currentPath.slice(0, index + 1))}
+            >
+              {path}
+            </button>
+            {index < currentPath.length - 1 && <span className="text-gray-400">/</span>}
+          </React.Fragment>
+        ))}
       </div>
 
-      {/* Editor de arquivo */}
-      {selectedFile && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span>📄</span>
-              <span className="font-semibold">
-                Editando: {selectedFile.path[selectedFile.path.length - 1]}
-              </span>
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                className="button button-primary"
-                onClick={saveFile}
-              >
-                💾 Salvar
-              </button>
-              <button
-                className="button button-danger"
-                onClick={deleteFile}
-              >
-                🗑️ Excluir
-              </button>
-              <button
-                className="button button-secondary"
-                onClick={() => setSelectedFile(null)}
-              >
-                ❌ Fechar
-              </button>
-            </div>
+      {/* Área de criação */}
+      {showCreateMenu && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-bold mb-2">Criar novo item:</h4>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              placeholder="Nome do item"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              className="input flex-1"
+            />
+            <select
+              value={newItemType}
+              onChange={(e) => setNewItemType(e.target.value)}
+              className="input"
+            >
+              <option value="folder">Pasta</option>
+              <option value="file">Arquivo</option>
+            </select>
           </div>
-          
-          <textarea
-            value={selectedFile.content}
-            onChange={(e) => setSelectedFile(prev => prev ? { ...prev, content: e.target.value } : null)}
-            rows={8}
-            className="input"
-            placeholder="Digite o conteúdo do arquivo..."
-          />
+          <div className="flex gap-2">
+            <button className="button button-primary" onClick={createItem}>
+              ✅ Criar
+            </button>
+            <button className="button button-secondary" onClick={() => setShowCreateMenu(false)}>
+              ❌ Cancelar
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Dicas */}
-      <div className="card" style={{ backgroundColor: '#eff6ff', borderColor: '#3b82f6' }}>
-        <div className="flex items-start gap-3">
-          <div className="text-blue-600 mt-1">
-            💡
+      {/* Lista de itens */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {currentItems.map((item, index) => (
+          <div
+            key={index}
+            className={`p-3 border rounded-lg cursor-pointer transition-all ${
+              selectedItem === item 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+            onClick={() => openItem(item)}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xl">
+                {item.type === 'folder' ? '📁' : '📄'}
+              </span>
+              <span className="font-medium">{item.name}</span>
+            </div>
+            
+            {selectedItem === item && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <div className="flex gap-1">
+                  <button
+                    className="button button-secondary text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteItem(item.name);
+                    }}
+                  >
+                    🗑️ Excluir
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <div>
-            <h4 className="font-semibold text-blue-800 mb-1">Dicas de uso:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Clique duas vezes em uma pasta para abrir</li>
-              <li>• Clique duas vezes em um arquivo para editar</li>
-              <li>• Use "Voltar" para navegar entre pastas</li>
-              <li>• Crie novos itens com o botão "Novo Item"</li>
-            </ul>
+        ))}
+      </div>
+
+      {/* Tarefas para completar */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-bold mb-2">Tarefas para completar:</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className={`p-2 rounded ${completedTasks.includes('create_folder') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+            {completedTasks.includes('create_folder') ? '✅' : '⏳'} Criar uma pasta
+          </div>
+          <div className={`p-2 rounded ${completedTasks.includes('create_file') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+            {completedTasks.includes('create_file') ? '✅' : '⏳'} Criar um arquivo
+          </div>
+          <div className={`p-2 rounded ${completedTasks.includes('delete') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+            {completedTasks.includes('delete') ? '✅' : '⏳'} Excluir um item
           </div>
         </div>
+      </div>
+
+      {/* Instruções */}
+      <div className="text-center mt-4 text-sm text-gray-600">
+        <p>💡 Dica: Clique duas vezes para abrir pastas • Clique uma vez para selecionar • Use os botões para navegar</p>
       </div>
     </div>
   );
