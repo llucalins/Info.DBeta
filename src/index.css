@@ -1,17 +1,37 @@
 /* Reset e estilos base */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Garantir que a aplicação ocupe toda a tela */
+#root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #FFFFFF;
   min-height: 100vh;
+  height: 100vh;
   color: #333;
   line-height: 1.6;
   overflow: hidden; /* Previne scroll na tela cheia */
+  margin: 0;
+  padding: 0;
 }
 
 /* Variáveis CSS */
@@ -34,10 +54,16 @@ body {
 .container {
   width: 100vw;
   height: 100vh;
-  padding: 10px;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 /* Navegação minimalista */
@@ -45,8 +71,9 @@ body {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 15px;
+  margin: 10px 0;
   flex-shrink: 0;
+  padding: 0 10px;
 }
 
 .nav-button {
@@ -94,18 +121,21 @@ body {
 
 /* Cards para tela cheia */
 .card {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 20px;
   padding: 30px;
-  margin-bottom: 0;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-color);
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
   transition: all 0.3s ease;
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  backdrop-filter: blur(10px);
+  overflow: auto;
+  backdrop-filter: blur(20px);
+  min-height: 0;
 }
 
 .card:hover {
@@ -149,11 +179,14 @@ body {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .button-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .button-secondary {
@@ -185,17 +218,58 @@ body {
 /* Inputs */
 .input {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid var(--border-color);
+  padding: 16px 20px;
+  border: 2px solid rgba(255, 193, 7, 0.4);
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 16px;
   transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  outline: none;
+  backdrop-filter: blur(10px);
+  font-weight: 500;
+}
+
+/* Botão de adicionar jogador */
+#addPlayerBtn {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 1000 !important;
+}
+
+/* Sobrescrever estilos dos botões para garantir cores amarelas */
+.button.bg-gradient-to-r.from-yellow-400.to-yellow-500 {
+  background: linear-gradient(to right, #fbbf24, #f59e0b) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3) !important;
+}
+
+.button.bg-gradient-to-r.from-red-400.to-red-500 {
+  background: linear-gradient(to right, #f87171, #ef4444) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Sobrescrever cabeçalho da tabela */
+tr.bg-gradient-to-r.from-yellow-400.to-yellow-500 {
+  background: linear-gradient(to right, #fbbf24, #f59e0b) !important;
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: rgba(255, 193, 7, 0.8);
+  box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.2);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 1);
+}
+
+.input::placeholder {
+  color: rgba(107, 114, 128, 0.7);
+  font-weight: 500;
 }
 
 /* Progress bar */
@@ -338,6 +412,28 @@ body {
   animation: shake 0.5s ease-in-out;
 }
 
+/* Estilos da tabela */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+th {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 600;
+}
+
+tr:hover {
+  background-color: #f9fafb;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
   .nav {
@@ -360,11 +456,11 @@ body {
   }
   
   .container {
-    padding: 8px;
+    padding: 0;
   }
   
   .card {
-    padding: 20px;
+    padding: 15px;
   }
 }
 
@@ -414,6 +510,15 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   flex: 1;
+}
+
+/* Garantir que o TypingTrainer ocupe o espaço disponível */
+.race-container {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .training-area:hover {
@@ -1109,4 +1214,294 @@ body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* RANKING SCREEN STYLES */
+.ranking-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 20px 0;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.ranking-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ranking-item.top-three {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #f59e0b;
+}
+
+.ranking-position {
+  flex-shrink: 0;
+  width: 60px;
+  text-align: center;
+}
+
+.position-icon {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.ranking-info {
+  flex: 1;
+  margin: 0 16px;
+}
+
+.student-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.session-date {
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.ranking-time {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.time-value {
+  display: block;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.time-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* LOGIN SCREEN STYLES */
+.max-w-md {
+  max-width: 28rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+/* SESSION TIMER */
+.session-timer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.timer-label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.timer-value {
+  font-size: 16px;
+  font-family: 'Courier New', monospace;
+  color: #22c55e;
+}
+
+/* RESPONSIVE RANKING */
+@media (max-width: 768px) {
+  .ranking-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .ranking-position {
+    width: auto;
+  }
+  
+  .ranking-info {
+    margin: 0;
+  }
+  
+  .ranking-time {
+    text-align: center;
+  }
+  
+  .session-timer {
+    top: 10px;
+    right: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .timer-value {
+    font-size: 14px;
+  }
+}
+
+/* LOGIN/RANKING TAB STYLES */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.current-session {
+  background: rgba(59, 130, 246, 0.05);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.session-info {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.login-section {
+  background: rgba(34, 197, 94, 0.05);
+  border: 2px solid rgba(34, 197, 94, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.login-form {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.ranking-section {
+  background: rgba(245, 158, 11, 0.05);
+  border: 2px solid rgba(245, 158, 11, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.ranking-list-compact {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ranking-item-compact {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ranking-item-compact:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.ranking-position-compact {
+  flex-shrink: 0;
+  width: 40px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.ranking-info-compact {
+  flex: 1;
+  margin: 0 12px;
+}
+
+.student-name-compact {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.session-date-compact {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.ranking-time-compact {
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--primary-color);
+  font-family: 'Courier New', monospace;
+}
+
+.font-mono {
+  font-family: 'Courier New', monospace;
+}
+
+/* RESPONSIVE LOGIN TAB */
+@media (max-width: 768px) {
+  .stats-overview {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .ranking-item-compact {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .ranking-position-compact {
+    width: auto;
+  }
+  
+  .ranking-info-compact {
+    margin: 0;
+  }
+}
+
+/* NAVIGATION BADGE */
+.nav-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--danger-color);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+.nav-button {
+  position: relative;
 }
