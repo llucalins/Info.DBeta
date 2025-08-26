@@ -35,7 +35,7 @@ function App() {
   const [currentPlayer, setCurrentPlayer] = useState(null);
   const [showGame, setShowGame] = useState(false);
 
-  // Debug: verificar jogadores carregados
+ //verificar jogadores carregados
   useEffect(() => {
     console.log('App - Jogadores carregados:', players);
   }, [players]);
