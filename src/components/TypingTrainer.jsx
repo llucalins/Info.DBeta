@@ -27,9 +27,7 @@ function TypingTrainer({ onComplete, playerName = "Jogador" }) {
 
   const raceWords = [
     "mouse", "teclado", "monitor", "cpu", "internet", "arquivo", "pasta", "software", 
-    "hardware", "navegador", "email", "download", "upload", "senha", "usuário", 
-    "programa", "aplicativo", "tela", "cursor", "clique", "duplo", "direito", 
-    "esquerdo", "rolagem", "botão", "tecla", "enter", "espaço", "backspace", "delete"
+    "hardware", "navegador", "email", "download", "upload", "senha", "usuário", "programa"
   ];
 
   const totalWords = raceWords.length;
