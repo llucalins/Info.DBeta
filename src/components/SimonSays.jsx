@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const SimonSays = ({ onComplete }) => {
+const SimonSays = ({ onComplete, playerName }) => {
   const [gameState, setGameState] = useState('waiting'); // 'waiting', 'showing', 'userTurn', 'gameOver'
   const [sequence, setSequence] = useState([]);
   const [userSequence, setUserSequence] = useState([]);
@@ -10,6 +10,9 @@ const SimonSays = ({ onComplete }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackType, setFeedbackType] = useState('');
+  const [gameStartTime, setGameStartTime] = useState(null);
+  const [totalMoves, setTotalMoves] = useState(0);
+  const [correctMoves, setCorrectMoves] = useState(0);
 
   const colors = [
     { id: 'red', name: 'Vermelho', color: '#ef4444' },
@@ -76,6 +79,9 @@ const SimonSays = ({ onComplete }) => {
     setCurrentStep(0);
     setScore(0);
     setActiveButton(null);
+    setGameStartTime(new Date());
+    setTotalMoves(0);
+    setCorrectMoves(0);
     
     // Adicionar primeira cor após um pequeno delay
     setTimeout(() => {
@@ -138,9 +144,11 @@ const SimonSays = ({ onComplete }) => {
 
     const newUserSequence = [...userSequence, colorId];
     setUserSequence(newUserSequence);
+    setTotalMoves(prev => prev + 1);
 
     // Verificar se a sequência está correta
     if (newUserSequence[newUserSequence.length - 1] === sequence[newUserSequence.length - 1]) {
+      setCorrectMoves(prev => prev + 1);
       // Sequência correta até agora
       if (newUserSequence.length === sequence.length) {
         // Sequência completa - continuar para próxima rodada
@@ -156,9 +164,17 @@ const SimonSays = ({ onComplete }) => {
       setGameState('gameOver');
       showFeedbackMessage('❌ Erro! Fim do jogo!', 'error');
       
-      // Salvar pontuação
+      // Calcular precisão
+      const accuracy = totalMoves > 0 ? Math.round((correctMoves / totalMoves) * 100) : 0;
+      
+      // Salvar pontuação com estatísticas adicionais
       setTimeout(() => {
-        onComplete(score);
+        onComplete(score, {
+          startTime: gameStartTime,
+          accuracy: accuracy,
+          totalMoves: totalMoves,
+          correctMoves: correctMoves
+        });
       }, 1000);
     }
   };
